@@ -5,7 +5,7 @@
 Primelib : prime number sieve and related functions
 =======================================================
 
-A resizable sieve of Erathonese and related mathematical methods
+A resizable sieve of Eratosthenes and related mathematical methods
 
 As a developer I want a reusable prime number library so that I can reduce development time
 
