@@ -30,7 +30,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=primelib.version.__version__,
 
-    description='Primelib: A resizable sieve of Erathonese and related mathematical methods',
+    description='Primelib: A resizable sieve of Erasthonese and related mathematical methods',
     long_description=long_description,
 
     # The project's main homepage.
