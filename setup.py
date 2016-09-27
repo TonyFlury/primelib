@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-import Primelib.version
+import primelib.version
 
 __author__ = 'Tony Flury anthony.flury@btinternet.com'
 __created__ = '27 Sep 2016'
@@ -23,14 +23,14 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='importjson',
+    name='Primelib',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
     version=primelib.version.__version__,
 
-    description='Primelib: A resizable sieve of Erathonese and related mathematical methods"
+    description='Primelib: A resizable sieve of Erathonese and related mathematical methods',
     long_description=long_description,
 
     # The project's main homepage.
