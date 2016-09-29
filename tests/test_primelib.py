@@ -25,6 +25,7 @@ import click
 from primelib.prime import PrimeSieve as Sieve
 import unittest
 from operator import mul
+from collections import Iterator
 
 __author__ = "Tony Flury anthony.flury@btinternet.com"
 __created__ = "27 Sep 2016"
@@ -76,6 +77,9 @@ def add_methods(*test_methods):
 
     return decorator
 
+# ----------------------------------------------------------------------------
+# Test methods to test correct result from nth_prime for all integers
+# ----------------------------------------------------------------------------
 
 def make_nth_prime_test(idx,val):
     """Make a test case function object to check the nth prime method"""
@@ -92,6 +96,9 @@ def nth_prime_test( ):
     for idx, val in enumerate(primes):
         yield make_nth_prime_test(idx,val)
 
+# ----------------------------------------------------------------------------
+# Test methods to test correct result from is_prime for all integers
+# ----------------------------------------------------------------------------
 
 def make_is_prime_test(i):
     """Build a test case function object to test primarilty of integer is correctly reported"""
@@ -110,13 +117,16 @@ def make_is_prime_test(i):
         test_integer_is_not_prime.__doc__ = "Testing that {:03d} is correctly marked as not a prime".format(i)
         return test_integer_is_not_prime
 
-
 def is_prime():
     """Construct function object to test primality of integers upto max_prime
        Does not need a larger separate list of primes to complete the tests
     """
     for i in range(1,max(primes)+1):
         yield make_is_prime_test(i)
+
+# ----------------------------------------------------------------------------
+# Test methods to test correct generation of prime factors for all integers
+# ----------------------------------------------------------------------------
 
 def make_factor_test(n):
     """Construct function object to test factorisation of integers upto 1000
@@ -141,6 +151,62 @@ def all_factors():
     for i in range(1,max(primes)+1):
         yield make_factor_test(i)
 
+# ----------------------------------------------------------------------------
+# Test methods to test correct prime iterator
+# ----------------------------------------------------------------------------
+
+def make_iterator_test(idx, value):
+    def test_iterator(self):
+        p = self.s_iter.next()
+        self.assertEqual(value, p, "Iterator returned {} but should have returned {} for {}th entry".format(p,value,idx))
+
+    test_iterator.__name__ = 'test_{:03d}_iterator'.format(idx)
+    test_iterator.__doc__ = "Testing that {:03d}th entry from iterator is correctl".format(idx)
+    return test_iterator
+
+def make_stop_iterator_test():
+    def test_stop_iterator_test(self):
+        with self.assertRaises(StopIteration):
+            self.s_iter.next()
+
+    test_stop_iterator_test.__name__ = 'test_{:03d}_Stop_iterator'.format(len(primes)+1)
+    test_stop_iterator_test.__doc__ = "Testing that the iterator correctly raises StopIteration exception at the end "
+    return test_stop_iterator_test
+
+def prime_iterator():
+    """Construct function objects to test correctly the iterator across the primes
+       Tests dependent on having a list of primes up to max_prime
+    """
+    for idx, value in enumerate(primes):
+        yield make_iterator_test(idx, value)
+
+    yield make_stop_iterator_test()
+
+
+# ----------------------------------------------------------------------------
+# Test methods to test correct divisor
+# ----------------------------------------------------------------------------
+def make_divisor_test(i):
+    def test_divisor(self):
+        divs = self.s.divisors(i)
+        div = [d for d in divs if i % d]
+        self.assertEqual([], div, "Incorrect divisors {} reported for {}: {} is not a divisor".format(div, i, div))
+
+    test_divisor.__name__ = 'test_{:03d}_divisor'.format(i)
+    test_divisor.__doc__ = "Testing that the correct divisors are reported for {}".format(i)
+    return test_divisor
+
+
+def divisors():
+    """Construct function objects to test correct divisors of integers upto max_prime
+       Tests dependent on having a list of primes up to max_prime
+    """
+    for i in range(1,max(primes)+1):
+        yield make_divisor_test(i)
+
+# ----------------------------------------------------------------------------
+# Test classes - each decorated with a call to add_methods to add test cases
+# ----------------------------------------------------------------------------
 
 @add_methods(nth_prime_test)
 class nthprime_test_class(unittest.TestCase):
@@ -160,14 +226,42 @@ class all_factors_test_class(unittest.TestCase):
     def setUpClass(cls):
         cls.s = Sieve(max(primes)+1) # Create sieve once only - sieve is immutable
 
+@add_methods(prime_iterator)
+class iterator_test_class(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.s = Sieve(max(primes)+1) # Create sieve once only - sieve is immutable
+        cls.s_iter = cls.s.primes()
+
+    def test_0000_iterator(self):
+        """Test that the primes method returns an iterator"""
+        self.assertIsInstance(self.s_iter, Iterator)
+
+    def test_0001_len(self):
+        """Test that the len method returns the correct length"""
+        self.assertEqual(len(self.s), len(primes))
+
+
+@add_methods(divisors)
+class divisors_test_class(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.s = Sieve(max(primes) + 1)  # Create sieve once only - sieve is immutable
+
+
+# ----------------------------------------------------------------------------
+# Test program - with options
+# ----------------------------------------------------------------------------
 
 @click.command()
 @click.option('-f','--failfast', default=False, help='Stop on the first test failure',is_flag=True)
 @click.option('-v','--verbose',default=0,help='The verbosity level to report on test progress')
-@click.option('--no-factors','no_factors', default=False,help="Don't Test Factorisation",is_flag=True)
+@click.option('--no-factors','no_factors', default=False,help="Don't Test Prime Factorisation",is_flag=True)
 @click.option('--no-nthprime','no_nthprime', default=False, help="Don't Test nth prime",is_flag=True)
 @click.option('--no-isprime', 'no_isprime', default=False,help="Don't Test is_prime on all integers",is_flag=True)
-def main(verbose, failfast, no_factors, no_nthprime, no_isprime):
+@click.option('--no-iterator', 'no_iterator', default=False,help="Don't test prime iterator",is_flag=True)
+@click.option('--no-divisors', 'no_divisors', default=False,help="Don't test divisor method for all integers",is_flag=True)
+def main(verbose, failfast, no_factors, no_nthprime, no_isprime, no_iterator, no_divisors):
 
     cls_list = []
 
@@ -177,7 +271,10 @@ def main(verbose, failfast, no_factors, no_nthprime, no_isprime):
         cls_list.append(isprime_test_class)
     if not no_factors:
         cls_list.append(all_factors_test_class)
-
+    if not no_iterator:
+        cls_list.append(iterator_test_class)
+    if not no_divisors:
+        cls_list.append(divisors_test_class)
 
     suite = unittest.TestSuite()
     for _cls in cls_list:
