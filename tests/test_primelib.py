@@ -26,6 +26,8 @@ from primelib.prime import PrimeSieve as Sieve
 import unittest
 from operator import mul
 from collections import Iterator
+import timeit
+import datetime as dt
 
 __author__ = "Tony Flury anthony.flury@btinternet.com"
 __created__ = "27 Sep 2016"
@@ -248,6 +250,40 @@ class divisors_test_class(unittest.TestCase):
     def setUpClass(cls):
         cls.s = Sieve(max(primes) + 1)  # Create sieve once only - sieve is immutable
 
+class performance_test_class(unittest.TestCase):
+    @staticmethod
+    def autorange(setup, stmnt, number=10000, minimum_time=0.2):
+        test_runs, time_taken = [], 0
+        loops,power,index = [1,2, 5], 0, 0
+        slowest = 0, quickest = 1 * 10**57
+
+        while time_taken < minimum_time:
+
+            test_times = timeit.Timer(setup=setup,stmt=stmnt).repeat(repeat=loops[index]*10**power,number=number)
+            print(test_times, index, power)
+            time_taken += sum(test_times)
+            print( time_taken)
+            test_runs.extend(test_times)
+            index = (index+1) % 3
+            power = power+1 if index == 0 else power
+
+
+        return test_runs
+
+    def test_establish_primes(self):
+
+        setup = 'from primelib.prime import PrimeSieve as Sieve'
+        test = 's = Sieve(5000)'  # Create sieve once only - sieve is immutable
+        test_runs = self.autorange(setup, test, minimum_time=2)
+        count = len(test_runs)
+        quickest = min(test_runs)
+        slowest = max(test_runs)
+        average = sum(test_runs)/count
+
+        print('{count:3d} executions of 1,000 sieve creations'.format(count=count))
+        print('      minimum execution time (per 1000): {min:0.4f}'.format(min=quickest))
+        print('      minimum execution time (per 1000): {max:0.4f}'.format(max=slowest))
+        print('      average execution time (per 1000): {average:0.4f}'.format(average=average))
 
 # ----------------------------------------------------------------------------
 # Test program - with options
@@ -261,7 +297,8 @@ class divisors_test_class(unittest.TestCase):
 @click.option('--no-isprime', 'no_isprime', default=False,help="Don't Test is_prime on all integers",is_flag=True)
 @click.option('--no-iterator', 'no_iterator', default=False,help="Don't test prime iterator",is_flag=True)
 @click.option('--no-divisors', 'no_divisors', default=False,help="Don't test divisor method for all integers",is_flag=True)
-def main(verbose, failfast, no_factors, no_nthprime, no_isprime, no_iterator, no_divisors):
+@click.option('--performance','performance', default=False, help='Execute performance testing only', is_flag=True)
+def main(verbose, failfast, no_factors, no_nthprime, no_isprime, no_iterator, no_divisors, performance):
 
     cls_list = []
 
@@ -275,6 +312,9 @@ def main(verbose, failfast, no_factors, no_nthprime, no_isprime, no_iterator, no
         cls_list.append(iterator_test_class)
     if not no_divisors:
         cls_list.append(divisors_test_class)
+
+    if performance:
+        cls_list = [performance_test_class]
 
     suite = unittest.TestSuite()
     for _cls in cls_list:

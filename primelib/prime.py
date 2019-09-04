@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pypy
 #
 # Euler : Implementation for prime
 # 
@@ -156,32 +156,39 @@ class PrimeSieve():
         factors = [reduce(lambda d, v: d * v, [t[0] ** t[1] for t in e], 1) for e in p]
         return sorted([i for i in factors if i < n])
 
-
 if __name__ == "__main__":
 
+    import sys
+    a = PrimeSieve(500000000)
+    with open('prime_500000000.txt', 'w') as p:
+        for i in a.primes():
+            p.write(str(i) + '\n')
+
     import unittest
+    import timeit
 
     class BasicTests(unittest.TestCase):
         def setUp(self):
-            self.Primes = PrimeSieve(100)  # Test with primes up to 100
-            # List fetched from https://primes.utm.edu/lists/small/1000.txt
-            self.results = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
-                            97]
+            # List fetched from https://primes.utm.edu/lists/small/10000.txt
+            with open('10000.txt') as primes_data:
+               self.results = [int(p.strip()) for line in primes_data for p in line.split()] 
 
-        def test_01_00_basic_primes_1_to_10(self):
-            for i in range(1, 11):
+            self.Primes = PrimeSieve(self.results[-1]+1)  # Test with primes up to the last value.
+
+        def test_01_00_basic_primes_1_to_1000(self):
+            for i in range(1, 100):
                 self.assertEqual(self.Primes.is_prime(i), i in self.results,
                                  "Test failed for primality of {0}".format(i))
             self.assertEqual(len(self.Primes), len(self.results))
 
-        def test_01_01_basic_primes_1_to_100(self):
-            for i in range(1, 101):
+        def test_01_01_basic_primes_1_to_end(self):
+            for i in range(1, self.results[-1]+1):
                 self.assertEqual(self.Primes.is_prime(i), i in self.results,
                                  "Test failed for primality of {0}".format(i))
 
         def test_02_01_errors(self):
             # The sieve can only handle numbers from 1 to it's limit. The sieve is not dynamic.
-            self.assertRaises(ValueError, self.Primes.is_prime, 101)
+            self.assertRaises(ValueError, self.Primes.is_prime, self.results[-1]+2)
             self.assertRaises(ValueError, self.Primes.is_prime, 0)
 
             # The sieve only handles integers
@@ -202,7 +209,7 @@ if __name__ == "__main__":
             self.assertSequenceEqual(p_list, self.results)
 
         def test_05_01_factors(self):
-            for num in range(2, 101):
+            for num in range(2, self.results[-1]+1):
                 # These loops emulate create list of simple factors - fac**exp
                 facs, exps = self.Primes.factors(num)
                 for fac, exp in zip(facs, exps):
@@ -212,9 +219,11 @@ if __name__ == "__main__":
                                              num, fac, exp, ex))
 
         def test_05_02_divisors(self):
-            for num in range(2, 101):
+            for num in range(2, self.results[-1]+1):
                 for d in self.Primes.divisors(num):
                     self.assertEqual(num % d, 0, "Divisor of {0} stated as {1}".format(num, d))
 
     suite = unittest.TestLoader().loadTestsFromTestCase(BasicTests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    print(timeit.timeit( 'unittest.TextTestRunner(verbosity=2).run(suite)', number=1,setup="from __main__ import unittest,suite"))
+  
+    
